@@ -137,6 +137,14 @@ prepare_kernel_headers() {
   fi
 }
 
+patch_libselinux() {
+  local file="$AOSP_ROOT/external/libselinux/src/procattr.c"
+  if [[ -f "$file" ]] && grep -q "static pid_t gettid" "$file"; then
+    sed -i 's/static pid_t gettid/static pid_t selinux_gettid/' "$file"
+    sed -i 's/\bgettid(/selinux_gettid(/g' "$file"
+  fi
+}
+
 install_deps
 require_cmd curl
 require_cmd tar
@@ -171,6 +179,7 @@ cp -a "$REPO_ROOT" "$AOSP_ROOT/system/core/fastboot"
 
 KERNEL_HEADERS="$AOSP_ROOT/kernel-headers"
 prepare_kernel_headers "$KERNEL_HEADERS"
+patch_libselinux
 
 SHIM_DIR="$AOSP_ROOT/system/core/fastboot/compat/sys"
 mkdir -p "$SHIM_DIR"

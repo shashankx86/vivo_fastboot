@@ -97,7 +97,7 @@ fetch_repo() {
       fi
       if [[ "$has_root_files" -eq 0 ]]; then
         roots="$(tar -tzf "$tarball" | awk -F/ '{ print $1 }' | sort -u)"
-        root_count="$(printf '%s\n' "$roots" | wc -l | tr -d ' ')"
+        root_count="$(printf '%s\n' "$roots" | wc -l)"
       else
         root_count=0
       fi
@@ -156,10 +156,9 @@ patch_libselinux() {
   fi
 
   if grep -q "static pid_t gettid" "$file"; then
-    sed -i \
+    sed -E -i \
       -e 's/static pid_t gettid/static pid_t selinux_gettid/' \
-      -e 's/^\([[:space:]]*\)gettid(/\1selinux_gettid(/' \
-      -e 's/\([^[:alnum:]_]\)gettid(/\1selinux_gettid(/g' \
+      -e 's/(^|[^[:alnum:]_])gettid\(/\1selinux_gettid(/g' \
       "$file"
   elif grep -q "selinux_gettid" "$file"; then
     return 0

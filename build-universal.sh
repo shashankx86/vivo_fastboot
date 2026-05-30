@@ -158,7 +158,7 @@ patch_libselinux() {
   if grep -q "static pid_t gettid" "$file"; then
     sed -i \
       -e 's/static pid_t gettid/static pid_t selinux_gettid/' \
-      -e 's/^gettid(/selinux_gettid(/' \
+      -e 's/^\([[:space:]]*\)gettid(/\1selinux_gettid(/' \
       -e 's/\([^[:alnum:]_]\)gettid(/\1selinux_gettid(/g' \
       "$file"
   elif grep -q "selinux_gettid" "$file"; then

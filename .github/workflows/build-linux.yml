@@ -1,0 +1,111 @@
+name: build-linux
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-22.04
+    env:
+      AOSP_TAG: android-4.4_r1
+      AOSP_ROOT: /tmp/aosp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential git ca-certificates musl-tools linux-libc-dev
+
+      - name: Fetch AOSP dependencies
+        run: |
+          set -euo pipefail
+          mkdir -p "$AOSP_ROOT"
+          clone_repo() {
+            local url="$1" dest="$2"
+            if git clone --depth 1 --branch "$AOSP_TAG" "$url" "$dest"; then
+              return 0
+            fi
+            git clone --depth 1 "$url" "$dest"
+          }
+          clone_repo https://android.googlesource.com/platform/system/core \
+            "$AOSP_ROOT/system/core"
+          clone_repo https://android.googlesource.com/platform/system/extras \
+            "$AOSP_ROOT/system/extras"
+          clone_repo https://android.googlesource.com/platform/external/libselinux \
+            "$AOSP_ROOT/external/libselinux"
+          clone_repo https://android.googlesource.com/platform/external/zlib \
+            "$AOSP_ROOT/external/zlib"
+          clone_repo https://android.googlesource.com/platform/external/openssl \
+            "$AOSP_ROOT/external/openssl"
+
+      - name: Replace fastboot sources
+        run: |
+          rm -rf "$AOSP_ROOT/system/core/fastboot"
+          cp -a "$GITHUB_WORKSPACE" "$AOSP_ROOT/system/core/fastboot"
+
+      - name: Prepare kernel headers
+        run: |
+          set -euo pipefail
+          KERNEL_HEADERS="$AOSP_ROOT/kernel-headers"
+          mkdir -p "$KERNEL_HEADERS"
+          cp -a /usr/include/linux "$KERNEL_HEADERS/"
+          if [ -d /usr/include/asm ]; then
+            cp -a /usr/include/asm "$KERNEL_HEADERS/"
+          else
+            cp -a /usr/include/x86_64-linux-gnu/asm "$KERNEL_HEADERS/"
+          fi
+          if [ -d /usr/include/asm-generic ]; then
+            cp -a /usr/include/asm-generic "$KERNEL_HEADERS/"
+          else
+            cp -a /usr/include/x86_64-linux-gnu/asm-generic "$KERNEL_HEADERS/"
+          fi
+
+      - name: Provide sys/cdefs.h shim
+        run: |
+          set -euo pipefail
+          SHIM_DIR="$AOSP_ROOT/system/core/fastboot/compat/sys"
+          mkdir -p "$SHIM_DIR"
+          cat > "$SHIM_DIR/cdefs.h" <<'EOF'
+#ifndef _SYS_CDEFS_H
+#define _SYS_CDEFS_H
+
+#ifdef __cplusplus
+#define __BEGIN_DECLS extern "C" {
+#define __END_DECLS }
+#else
+#define __BEGIN_DECLS
+#define __END_DECLS
+#endif
+
+#endif
+EOF
+
+      - name: Build static binary (x86_64)
+        run: |
+          set -euo pipefail
+          make -C "$AOSP_ROOT/system/core/fastboot" \
+            CC=musl-gcc LD=musl-gcc \
+            CFLAGS="-pthread -fcommon -I$AOSP_ROOT/kernel-headers -I$AOSP_ROOT/system/core/fastboot/compat" \
+            LDFLAGS="-static -s -pthread"
+
+      - name: Package artifact
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          cp "$AOSP_ROOT/system/core/fastboot/fastboot" \
+            "$GITHUB_WORKSPACE/dist/fastboot"
+          file "$GITHUB_WORKSPACE/dist/fastboot" || true
+          ldd "$GITHUB_WORKSPACE/dist/fastboot" || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastboot-linux-x86_64
+          path: dist/fastboot

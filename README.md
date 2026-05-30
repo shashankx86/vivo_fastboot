@@ -35,3 +35,14 @@ Now type make within fastboot directory to compile the fastboot binary.
 
 if you get compile error, it's most likely due to toolchain, edit makefile to point to your toolchain.
 If you want to add support for more commands, just search "vivo_bsp" in fastboot.c, & replace it with your desired commmand.
+
+Universal Linux build script (static binary):
+
+  ./build-universal.sh
+
+Environment variables:
+  AOSP_TAG=android-4.4_r1     # AOSP tag to download
+  OUTPUT_DIR=./dist           # output directory for fastboot
+  WORK_DIR=/tmp/vivo-build    # build workspace (default: temp dir)
+  KEEP_WORKDIR=1              # keep WORK_DIR after build
+  SKIP_DEPS=1                 # skip dependency installation

@@ -91,6 +91,7 @@ fetch_repo() {
 
   for url in "$@"; do
     if curl -fsSL "$url" -o "$tarball"; then
+      # If any entry has no '/', the archive contains root-level files.
       if tar -tzf "$tarball" | grep -q '^[^/]*$'; then
         has_root_files=1
       fi
@@ -157,7 +158,8 @@ patch_libselinux() {
   if grep -q "static pid_t gettid" "$file"; then
     sed -i \
       -e 's/static pid_t gettid/static pid_t selinux_gettid/' \
-      -e 's/\bgettid(/selinux_gettid(/g' \
+      -e 's/^gettid(/selinux_gettid(/' \
+      -e 's/\([^[:alnum:]_]\)gettid(/\1selinux_gettid(/g' \
       "$file"
   elif grep -q "selinux_gettid" "$file"; then
     return 0

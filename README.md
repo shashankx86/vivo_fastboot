@@ -34,7 +34,7 @@ Now the vivo_fastboot source will be downloaded in fastboot directory with a cus
 Now type make within fastboot directory to compile the fastboot binary.
 
 if you get compile error, it's most likely due to toolchain, edit makefile to point to your toolchain.
-If you want to add support for more commands, just search "vivo_bsp" in fastboot.c, & replace it with your desired commmand.
+If you want to add support for more commands, just search "vivo_bsp" in fastboot.c, & replace it with your desired command.
 
 Universal Linux build script (static binary):
 

@@ -77,14 +77,31 @@ install_deps() {
 
 fetch_repo() {
   local name="$1"
-  local url="$2"
-  local dest="$3"
+  local dest="$2"
+  shift 2
   local tarball="$WORK_DIR/${name}.tar.gz"
+  local url
+  local first_entry
+  local strip_flag=()
 
   rm -rf "$dest"
   mkdir -p "$dest"
-  curl -fsSL "$url" -o "$tarball"
-  tar -xzf "$tarball" -C "$dest"
+
+  for url in "$@"; do
+    if curl -fsSL "$url" -o "$tarball"; then
+      first_entry="$(tar -tzf "$tarball" | head -n1 || true)"
+      if [[ "$first_entry" == */* ]]; then
+        strip_flag=(--strip-components=1)
+      else
+        strip_flag=()
+      fi
+      tar -xzf "$tarball" -C "$dest" "${strip_flag[@]}"
+      return 0
+    fi
+  done
+
+  echo "Failed to download $name from all sources." >&2
+  return 1
 }
 
 prepare_kernel_headers() {
@@ -128,21 +145,21 @@ require_cmd make
 AOSP_ROOT="$WORK_DIR/aosp"
 mkdir -p "$AOSP_ROOT"
 
-fetch_repo "system-core" \
+fetch_repo "system-core" "$AOSP_ROOT/system/core" \
   "https://android.googlesource.com/platform/system/core/+archive/${AOSP_TAG}.tar.gz" \
-  "$AOSP_ROOT/system/core"
-fetch_repo "system-extras" \
+  "https://github.com/aosp-mirror/platform_system_core/archive/refs/tags/${AOSP_TAG}.tar.gz"
+fetch_repo "system-extras" "$AOSP_ROOT/system/extras" \
   "https://android.googlesource.com/platform/system/extras/+archive/${AOSP_TAG}.tar.gz" \
-  "$AOSP_ROOT/system/extras"
-fetch_repo "external-libselinux" \
+  "https://github.com/aosp-mirror/platform_system_extras/archive/refs/tags/${AOSP_TAG}.tar.gz"
+fetch_repo "external-libselinux" "$AOSP_ROOT/external/libselinux" \
   "https://android.googlesource.com/platform/external/libselinux/+archive/${AOSP_TAG}.tar.gz" \
-  "$AOSP_ROOT/external/libselinux"
-fetch_repo "external-zlib" \
+  "https://github.com/aosp-mirror/platform_external_libselinux/archive/refs/tags/${AOSP_TAG}.tar.gz"
+fetch_repo "external-zlib" "$AOSP_ROOT/external/zlib" \
   "https://android.googlesource.com/platform/external/zlib/+archive/${AOSP_TAG}.tar.gz" \
-  "$AOSP_ROOT/external/zlib"
-fetch_repo "external-openssl" \
+  "https://github.com/aosp-mirror/platform_external_zlib/archive/refs/tags/${AOSP_TAG}.tar.gz"
+fetch_repo "external-openssl" "$AOSP_ROOT/external/openssl" \
   "https://android.googlesource.com/platform/external/openssl/+archive/${AOSP_TAG}.tar.gz" \
-  "$AOSP_ROOT/external/openssl"
+  "https://github.com/aosp-mirror/platform_external_openssl/archive/refs/tags/${AOSP_TAG}.tar.gz"
 
 rm -rf "$AOSP_ROOT/system/core/fastboot"
 cp -a "$REPO_ROOT" "$AOSP_ROOT/system/core/fastboot"

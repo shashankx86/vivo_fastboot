@@ -147,19 +147,24 @@ mkdir -p "$AOSP_ROOT"
 
 fetch_repo "system-core" "$AOSP_ROOT/system/core" \
   "https://android.googlesource.com/platform/system/core/+archive/${AOSP_TAG}.tar.gz" \
-  "https://github.com/aosp-mirror/platform_system_core/archive/refs/tags/${AOSP_TAG}.tar.gz"
+  "https://github.com/aosp-mirror/platform_system_core/archive/refs/tags/${AOSP_TAG}.tar.gz" \
+  "https://github.com/aosp-mirror-neo/platform_system_core/archive/refs/tags/${AOSP_TAG}.tar.gz"
 fetch_repo "system-extras" "$AOSP_ROOT/system/extras" \
   "https://android.googlesource.com/platform/system/extras/+archive/${AOSP_TAG}.tar.gz" \
-  "https://github.com/aosp-mirror/platform_system_extras/archive/refs/tags/${AOSP_TAG}.tar.gz"
+  "https://github.com/aosp-mirror/platform_system_extras/archive/refs/tags/${AOSP_TAG}.tar.gz" \
+  "https://github.com/aosp-mirror-neo/platform_system_extras/archive/refs/tags/${AOSP_TAG}.tar.gz"
 fetch_repo "external-libselinux" "$AOSP_ROOT/external/libselinux" \
   "https://android.googlesource.com/platform/external/libselinux/+archive/${AOSP_TAG}.tar.gz" \
-  "https://github.com/aosp-mirror/platform_external_libselinux/archive/refs/tags/${AOSP_TAG}.tar.gz"
+  "https://github.com/aosp-mirror/platform_external_libselinux/archive/refs/tags/${AOSP_TAG}.tar.gz" \
+  "https://github.com/aosp-mirror-neo/platform_external_libselinux/archive/refs/tags/${AOSP_TAG}.tar.gz"
 fetch_repo "external-zlib" "$AOSP_ROOT/external/zlib" \
   "https://android.googlesource.com/platform/external/zlib/+archive/${AOSP_TAG}.tar.gz" \
-  "https://github.com/aosp-mirror/platform_external_zlib/archive/refs/tags/${AOSP_TAG}.tar.gz"
+  "https://github.com/aosp-mirror/platform_external_zlib/archive/refs/tags/${AOSP_TAG}.tar.gz" \
+  "https://github.com/aosp-mirror-neo/platform_external_zlib/archive/refs/tags/${AOSP_TAG}.tar.gz"
 fetch_repo "external-openssl" "$AOSP_ROOT/external/openssl" \
   "https://android.googlesource.com/platform/external/openssl/+archive/${AOSP_TAG}.tar.gz" \
-  "https://github.com/aosp-mirror/platform_external_openssl/archive/refs/tags/${AOSP_TAG}.tar.gz"
+  "https://github.com/aosp-mirror/platform_external_openssl/archive/refs/tags/${AOSP_TAG}.tar.gz" \
+  "https://github.com/aosp-mirror-neo/platform_external_openssl/archive/refs/tags/${AOSP_TAG}.tar.gz"
 
 rm -rf "$AOSP_ROOT/system/core/fastboot"
 cp -a "$REPO_ROOT" "$AOSP_ROOT/system/core/fastboot"

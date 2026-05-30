@@ -84,15 +84,23 @@ fetch_repo() {
   local strip_flag=()
   local roots
   local root_count
+  local has_root_files=0
 
   rm -rf "$dest"
   mkdir -p "$dest"
 
   for url in "$@"; do
     if curl -fsSL "$url" -o "$tarball"; then
-      roots="$(tar -tzf "$tarball" | awk -F/ 'NF > 1 { print $1 } NF == 1 { print "" }' | sort -u)"
-      root_count="$(printf '%s\n' "$roots" | wc -l | tr -d ' ')"
-      if [[ "$root_count" -eq 1 && -n "$roots" ]]; then
+      if tar -tzf "$tarball" | grep -qv '/'; then
+        has_root_files=1
+      fi
+      if [[ "$has_root_files" -eq 0 ]]; then
+        roots="$(tar -tzf "$tarball" | awk -F/ '{ print $1 }' | sort -u)"
+        root_count="$(printf '%s\n' "$roots" | wc -l | tr -d ' ')"
+      else
+        root_count=0
+      fi
+      if [[ "$root_count" -eq 1 ]]; then
         strip_flag=(--strip-components=1)
       else
         strip_flag=()
@@ -146,6 +154,8 @@ patch_libselinux() {
       -e 's/static pid_t gettid/static pid_t selinux_gettid/' \
       -e 's/\bgettid(/selinux_gettid(/g' \
       "$file"
+  elif [[ -f "$file" ]] && grep -q "selinux_gettid" "$file"; then
+    return 0
   fi
 }
 

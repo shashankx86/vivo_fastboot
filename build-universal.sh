@@ -81,16 +81,18 @@ fetch_repo() {
   shift 2
   local tarball="$WORK_DIR/${name}.tar.gz"
   local url
-  local first_entry
   local strip_flag=()
+  local roots
+  local root_count
 
   rm -rf "$dest"
   mkdir -p "$dest"
 
   for url in "$@"; do
     if curl -fsSL "$url" -o "$tarball"; then
-      first_entry="$(tar -tzf "$tarball" | head -n1 || true)"
-      if [[ "$first_entry" == */* ]]; then
+      roots="$(tar -tzf "$tarball" | awk -F/ 'NF > 1 { print $1 } NF == 1 { print "" }' | sort -u)"
+      root_count="$(printf '%s\n' "$roots" | wc -l | tr -d ' ')"
+      if [[ "$root_count" -eq 1 && -n "$roots" ]]; then
         strip_flag=(--strip-components=1)
       else
         strip_flag=()
@@ -140,8 +142,10 @@ prepare_kernel_headers() {
 patch_libselinux() {
   local file="$AOSP_ROOT/external/libselinux/src/procattr.c"
   if [[ -f "$file" ]] && grep -q "static pid_t gettid" "$file"; then
-    sed -i 's/static pid_t gettid/static pid_t selinux_gettid/' "$file"
-    sed -i 's/\bgettid(/selinux_gettid(/g' "$file"
+    sed -i \
+      -e 's/static pid_t gettid/static pid_t selinux_gettid/' \
+      -e 's/\bgettid(/selinux_gettid(/g' \
+      "$file"
   fi
 }
 
@@ -204,7 +208,7 @@ require_cmd "$CC_BIN"
 
 make -C "$AOSP_ROOT/system/core/fastboot" \
   CC="$CC_BIN" LD="$LD_BIN" \
-  CFLAGS="-pthread -fcommon -I$KERNEL_HEADERS -I$AOSP_ROOT/system/core/fastboot/compat" \
+  CFLAGS="-pthread -fcommon -I\"$KERNEL_HEADERS\" -I\"$AOSP_ROOT/system/core/fastboot/compat\"" \
   LDFLAGS="-static -s -pthread"
 
 mkdir -p "$OUTPUT_DIR"

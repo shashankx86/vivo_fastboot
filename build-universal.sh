@@ -91,7 +91,7 @@ fetch_repo() {
 
   for url in "$@"; do
     if curl -fsSL "$url" -o "$tarball"; then
-      if tar -tzf "$tarball" | grep -qv '/'; then
+      if tar -tzf "$tarball" | grep -q '^[^/]*$'; then
         has_root_files=1
       fi
       if [[ "$has_root_files" -eq 0 ]]; then
@@ -149,12 +149,17 @@ prepare_kernel_headers() {
 
 patch_libselinux() {
   local file="$AOSP_ROOT/external/libselinux/src/procattr.c"
-  if [[ -f "$file" ]] && grep -q "static pid_t gettid" "$file"; then
+  if [[ ! -f "$file" ]]; then
+    echo "Warning: $file not found; skipping libselinux gettid patch." >&2
+    return 0
+  fi
+
+  if grep -q "static pid_t gettid" "$file"; then
     sed -i \
       -e 's/static pid_t gettid/static pid_t selinux_gettid/' \
       -e 's/\bgettid(/selinux_gettid(/g' \
       "$file"
-  elif [[ -f "$file" ]] && grep -q "selinux_gettid" "$file"; then
+  elif grep -q "selinux_gettid" "$file"; then
     return 0
   fi
 }
@@ -216,6 +221,7 @@ CC_BIN="${CC:-musl-gcc}"
 LD_BIN="${LD:-musl-gcc}"
 require_cmd "$CC_BIN"
 
+# -fcommon is required for older AOSP sources with GCC 10+ defaults.
 make -C "$AOSP_ROOT/system/core/fastboot" \
   CC="$CC_BIN" LD="$LD_BIN" \
   CFLAGS="-pthread -fcommon -I\"$KERNEL_HEADERS\" -I\"$AOSP_ROOT/system/core/fastboot/compat\"" \
